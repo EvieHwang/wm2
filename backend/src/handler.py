@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 from src.models.response import ClassificationRequest, ErrorResponse
+from src.agent.classifier import classify_product
 
 
 def validate_classification_request(body: Dict[str, Any]) -> Tuple[Optional[ClassificationRequest], Optional[ErrorResponse]]:
@@ -90,17 +91,16 @@ def handle_classify(event: Dict[str, Any]) -> Dict[str, Any]:
     if error:
         return create_response(400, error.to_dict())
 
-    # TODO: T016 - Call classifier and return result
-    # For now, return a placeholder response
-    return create_response(200, {
-        "classification": "TOTE",
-        "confidence": 50,
-        "reasoning": "Classification not yet implemented",
-        "tools_used": {
-            "lookup_known_product": {"called": False, "reason": "Not implemented"},
-            "extract_explicit_dimensions": {"called": False, "reason": "Not implemented"},
-        }
-    })
+    # Call classifier and return result
+    try:
+        result = classify_product(request.description)
+        return create_response(200, result.to_dict())
+    except Exception as e:
+        # Handle classifier errors gracefully
+        return create_response(500, ErrorResponse(
+            error="service_error",
+            message="Service temporarily unavailable. Please try again."
+        ).to_dict())
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
