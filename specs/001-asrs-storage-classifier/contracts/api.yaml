@@ -1,0 +1,222 @@
+openapi: 3.0.3
+info:
+  title: ASRS Storage Classifier API
+  description: |
+    AI-powered product classifier that predicts which ASRS container type
+    a product should be routed to based on text description.
+  version: 1.0.0
+  contact:
+    name: Eve Hwang
+    url: https://wm2.evehwang.com
+
+servers:
+  - url: https://api.wm2.evehwang.com
+    description: Production API
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /classify:
+    post:
+      operationId: classifyProduct
+      summary: Classify a product into an ASRS container category
+      description: |
+        Analyzes the product description using AI and returns the recommended
+        container category (Pouch, Small Bin, Tote, Carton, or Oversized) along
+        with confidence score and reasoning.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassificationRequest'
+            examples:
+              knownProduct:
+                summary: Known product name
+                value:
+                  description: "Sony WH-1000XM5 headphones"
+              explicitDimensions:
+                summary: Explicit dimensions provided
+                value:
+                  description: "Cardboard box 10x8x4 inches, weighs 5 lbs"
+              genericDescription:
+                summary: Generic description
+                value:
+                  description: "cotton t-shirt, medium size"
+      responses:
+        '200':
+          description: Successful classification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassificationResult'
+              examples:
+                smallBinResult:
+                  summary: Product classified as Small Bin
+                  value:
+                    classification: "SMALL_BIN"
+                    confidence: 87
+                    reasoning: "Based on the product lookup, the Sony WH-1000XM5 headphones have dimensions of 7.3 x 3.0 x 9.4 inches and weight of 8.8 oz. These fit within the Small Bin constraints (12×9×6 in, 10 lbs) but exceed Pouch depth (2 in max)."
+                    tools_used:
+                      lookup_known_product:
+                        called: true
+                        result: "Found match: Sony WH-1000XM5, dimensions 7.3x3.0x9.4 in, weight 8.8 oz"
+                      extract_explicit_dimensions:
+                        called: false
+                        reason: "No explicit dimensions in input"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emptyDescription:
+                  summary: Empty description
+                  value:
+                    error: "validation_error"
+                    message: "Please enter a product description"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serviceUnavailable:
+                  summary: AI service unavailable
+                  value:
+                    error: "service_error"
+                    message: "Service temporarily unavailable. Please try again."
+        '504':
+          description: Request timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                timeout:
+                  summary: Request timed out
+                  value:
+                    error: "timeout"
+                    message: "Request timed out. Please try again."
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      description: Returns service health status
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  schemas:
+    ClassificationRequest:
+      type: object
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Product description text
+          example: "Sony WH-1000XM5 wireless noise-canceling headphones"
+
+    ClassificationResult:
+      type: object
+      required:
+        - classification
+        - confidence
+        - reasoning
+        - tools_used
+      properties:
+        classification:
+          $ref: '#/components/schemas/CategoryEnum'
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Confidence percentage for the classification
+          example: 87
+        reasoning:
+          type: string
+          description: Natural language explanation of the classification decision
+          example: "Based on the product lookup, the Sony WH-1000XM5 headphones have dimensions of 7.3 x 3.0 x 9.4 inches..."
+        tools_used:
+          $ref: '#/components/schemas/ToolUsageRecord'
+
+    CategoryEnum:
+      type: string
+      enum:
+        - POUCH
+        - SMALL_BIN
+        - TOTE
+        - CARTON
+        - OVERSIZED
+      description: |
+        Container category for ASRS routing:
+        - POUCH: Max 12×9×2 in, 1 lb - apparel, soft goods
+        - SMALL_BIN: Max 12×9×6 in, 10 lbs - electronics, small parts
+        - TOTE: Max 18×14×12 in, 50 lbs - general merchandise
+        - CARTON: Max 24×18×18 in, 70 lbs - bulky items
+        - OVERSIZED: Anything larger
+
+    ToolUsageRecord:
+      type: object
+      required:
+        - lookup_known_product
+        - extract_explicit_dimensions
+      properties:
+        lookup_known_product:
+          $ref: '#/components/schemas/ToolInvocation'
+        extract_explicit_dimensions:
+          $ref: '#/components/schemas/ToolInvocation'
+
+    ToolInvocation:
+      type: object
+      required:
+        - called
+      properties:
+        called:
+          type: boolean
+          description: Whether the tool was invoked
+        result:
+          type: string
+          nullable: true
+          description: Tool output if called
+          example: "Found match: Sony WH-1000XM5, dimensions 7.3x3.0x9.4 in"
+        reason:
+          type: string
+          nullable: true
+          description: Explanation of why tool was or wasn't called
+          example: "No explicit dimensions in input"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          enum:
+            - validation_error
+            - service_error
+            - timeout
+        message:
+          type: string
+          description: Human-readable error message

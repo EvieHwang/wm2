@@ -70,3 +70,10 @@ Always ask before performing these operations:
 - Explain decisions briefly in commit messages
 - Report blockers or ambiguities immediately
 - Summarize what was done after completing tasks
+
+## Active Technologies
+- Python 3.11+ (Lambda runtime) + Claude API (Anthropic SDK), AWS Lambda, API Gateway, S3 (001-asrs-storage-classifier)
+- S3 (reference CSV storage) (001-asrs-storage-classifier)
+
+## Recent Changes
+- 001-asrs-storage-classifier: Added Python 3.11+ (Lambda runtime) + Claude API (Anthropic SDK), AWS Lambda, API Gateway, S3

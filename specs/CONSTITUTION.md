@@ -4,7 +4,7 @@ This document establishes the foundational architectural principles, design phil
 
 ## Project Mission
 
-Build an AI-powered supply chain tool that accurately predicts product weights and dimensions from text descriptions, enabling automated logistics planning and cost estimation.
+Build an AI-powered supply chain tool that accurately predicts product classifications from text descriptions, enabling automated logistics planning and cost estimation.
 
 ## Architectural Principles
 
