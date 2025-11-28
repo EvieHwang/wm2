@@ -92,3 +92,53 @@ def get_category_description(category: CategoryEnum) -> str:
         CategoryEnum.OVERSIZED: "Items exceeding standard container limits",
     }
     return descriptions.get(category, "")
+
+
+def get_rejection_reasons(
+    length: Optional[float] = None,
+    width: Optional[float] = None,
+    height: Optional[float] = None,
+    weight: Optional[float] = None
+) -> dict[CategoryEnum, str]:
+    """Get reasons why each smaller category was rejected.
+
+    Useful for generating reasoning in classification results.
+
+    Returns:
+        Dictionary mapping rejected categories to explanation strings.
+    """
+    reasons = {}
+    final_category = classify_by_dimensions(length, width, height, weight)
+
+    for constraint in CATEGORY_CONSTRAINTS:
+        if constraint.category == final_category:
+            break  # Stop at the final category
+
+        # Check which constraint was exceeded
+        exceeded = []
+        if length is not None and length > constraint.max_length:
+            exceeded.append(f"length {length}\" > {constraint.max_length}\"")
+        if width is not None and width > constraint.max_width:
+            exceeded.append(f"width {width}\" > {constraint.max_width}\"")
+        if height is not None and height > constraint.max_height:
+            exceeded.append(f"height {height}\" > {constraint.max_height}\"")
+        if weight is not None and weight > constraint.max_weight:
+            exceeded.append(f"weight {weight} lbs > {constraint.max_weight} lbs")
+
+        if exceeded:
+            reasons[constraint.category] = f"Exceeds {get_category_display_name(constraint.category)}: {', '.join(exceeded)}"
+
+    return reasons
+
+
+def get_category_constraints_dict(category: CategoryEnum) -> dict:
+    """Get constraints for a category as a dictionary."""
+    for constraint in CATEGORY_CONSTRAINTS:
+        if constraint.category == category:
+            return {
+                "max_length": constraint.max_length,
+                "max_width": constraint.max_width,
+                "max_height": constraint.max_height,
+                "max_weight": constraint.max_weight,
+            }
+    return {}
