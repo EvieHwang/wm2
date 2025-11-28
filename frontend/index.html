@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASRS Storage Classifier</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ASRS Storage Classifier</h1>
+            <p class="subtitle">AI-powered product classification for warehouse routing</p>
+        </header>
+
+        <main>
+            <!-- Input Section -->
+            <section class="input-section">
+                <label for="product-description">Product Description</label>
+                <textarea
+                    id="product-description"
+                    placeholder="Enter a product description, e.g., 'Sony WH-1000XM5 headphones' or 'cardboard box 10x8x4 inches, 5 lbs'"
+                    rows="3"
+                    maxlength="2000"
+                ></textarea>
+                <div class="input-actions">
+                    <span class="char-count"><span id="char-count">0</span>/2000</span>
+                    <button id="classify-btn" type="button">Classify</button>
+                </div>
+            </section>
+
+            <!-- Result Section (hidden by default) -->
+            <section id="result-section" class="result-section hidden">
+                <h2>Classification Result</h2>
+
+                <!-- Classification Badge -->
+                <div class="classification-result">
+                    <span id="classification-badge" class="category-badge">TOTE</span>
+                    <div class="confidence-wrapper">
+                        <span class="confidence-label">Confidence:</span>
+                        <span id="confidence-value" class="confidence-value">85%</span>
+                    </div>
+                </div>
+
+                <!-- Reasoning -->
+                <div class="reasoning-section">
+                    <h3>Reasoning</h3>
+                    <p id="reasoning-text" class="reasoning-text"></p>
+                </div>
+
+                <!-- Tools Used -->
+                <div class="tools-section">
+                    <h3>Tools Used</h3>
+                    <div id="tools-used" class="tools-list">
+                        <!-- Tool status items will be inserted here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section (hidden by default) -->
+            <section id="error-section" class="error-section hidden">
+                <div class="error-message">
+                    <span class="error-icon">!</span>
+                    <p id="error-text"></p>
+                </div>
+            </section>
+
+            <!-- Loading State (hidden by default) -->
+            <section id="loading-section" class="loading-section hidden">
+                <div class="spinner"></div>
+                <p>Classifying product...</p>
+            </section>
+        </main>
+
+        <footer>
+            <p>Built with Claude AI | <a href="https://evehwang.com">Eve Hwang</a></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
