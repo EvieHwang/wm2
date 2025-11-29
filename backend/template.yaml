@@ -45,7 +45,8 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'https://wm2.evehwang.com'"
+        AllowOrigin: "'*'"
+        AllowCredentials: false
       DefinitionBody:
         openapi: "3.0.1"
         info:
@@ -82,7 +83,7 @@ Resources:
                     responseParameters:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
                       method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
-                      method.response.header.Access-Control-Allow-Origin: "'https://wm2.evehwang.com'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
           /health:
             get:
               x-amazon-apigateway-integration:
