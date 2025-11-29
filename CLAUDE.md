@@ -17,6 +17,16 @@ The following operations may be performed autonomously without asking for user c
 - **Build and test**: Run build processes, test suites, and validation scripts
 - **Install dependencies**: Add, update, or remove project dependencies as needed
 
+### AWS Operations
+- **SAM build/deploy**: Run `sam build` and `sam deploy` for Lambda deployments
+- **S3 sync**: Upload files to S3 buckets with `aws s3 sync` or `aws s3 cp`
+- **S3 bucket creation**: Create new S3 buckets for hosting or storage
+- **S3 website configuration**: Enable static website hosting on S3 buckets
+- **S3 bucket policies**: Set public access policies for website hosting
+- **CloudFormation operations**: Create/update stacks via SAM or CDK
+- **Lambda updates**: Deploy new versions of Lambda functions
+- **API Gateway**: Create and configure API Gateway endpoints
+
 ### Linear Integration
 - **Create issues**: Generate Linear issues from specs with appropriate metadata
 - **Update issue status**: Move issues through workflow states (To Do, In Progress, Done)
