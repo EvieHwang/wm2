@@ -91,11 +91,14 @@ Always respond with a JSON object containing:
 - classification: The category (POUCH, SMALL_BIN, TOTE, CARTON, or OVERSIZED)
 - confidence: Your confidence percentage (0-100)
 - reasoning: Explain your classification, including:
-  - What dimensions/weight you used
-  - Why the product doesn't fit in smaller categories (if applicable)
-  - Whether you used tool data or estimated
+  - What dimensions/weight you used (or estimated)
+  - Whether data came from tool lookup, explicit text, or your estimation
+  - **IMPORTANT: For categories larger than POUCH, explain WHY smaller categories don't fit**
+    - Example: "This item exceeds POUCH height limit (2") with 4" depth, and exceeds SMALL_BIN because..."
+    - Be specific about which constraint (length, width, height, or weight) was exceeded
+  - If estimating, explain your reasoning about typical product sizes
 
-Be concise but thorough in your reasoning."""
+Be concise but thorough. Users want to understand why their product can't fit in a smaller, more efficient container."""
 
 
 def get_classification_prompt(description: str) -> str:
