@@ -5,7 +5,7 @@
 // API endpoint - update for production
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
-    : 'https://api.wm2.evehwang.com';
+    : 'https://zatpg0rga1.execute-api.us-west-2.amazonaws.com/prod';
 
 // DOM elements
 const descriptionInput = document.getElementById('product-description');
