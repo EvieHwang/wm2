@@ -1,11 +1,15 @@
 """Main agent classifier using Claude API with tool use."""
 
 import json
+import logging
 import os
 import re
 from typing import Any, Dict, Optional
 
-from anthropic import Anthropic
+from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError, APITimeoutError
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 from src.agent.prompts import TOOLS, SYSTEM_PROMPT, get_classification_prompt
 from src.agent.tools.lookup_product import lookup_known_product
@@ -85,6 +89,11 @@ def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+class ClassificationError(Exception):
+    """Custom exception for classification errors."""
+    pass
+
+
 def classify_product(description: str) -> ClassificationResult:
     """Classify a product using Claude with tool use.
 
@@ -93,8 +102,16 @@ def classify_product(description: str) -> ClassificationResult:
 
     Returns:
         ClassificationResult with classification, confidence, reasoning, and tool usage.
+
+    Raises:
+        ClassificationError: If classification fails due to API errors.
     """
-    client = get_anthropic_client()
+    try:
+        client = get_anthropic_client()
+    except ValueError as e:
+        logger.error(f"Failed to initialize Anthropic client: {e}")
+        raise ClassificationError("Service configuration error") from e
+
     tools_used = ToolUsageRecord()
 
     # Initial message to Claude
@@ -107,15 +124,31 @@ def classify_product(description: str) -> ClassificationResult:
 
     # Agentic loop - keep processing until we get a final response
     max_iterations = 5
-    for _ in range(max_iterations):
-        response = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            tools=TOOLS,
-            tool_choice={"type": "auto"},
-            messages=messages,
-        )
+    response = None
+
+    for iteration in range(max_iterations):
+        try:
+            response = client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=1024,
+                system=SYSTEM_PROMPT,
+                tools=TOOLS,
+                tool_choice={"type": "auto"},
+                messages=messages,
+                timeout=25.0,  # 25 second timeout (Lambda has 30s)
+            )
+        except APITimeoutError as e:
+            logger.error(f"Claude API timeout on iteration {iteration}: {e}")
+            raise ClassificationError("Request timed out. Please try again.") from e
+        except RateLimitError as e:
+            logger.error(f"Claude API rate limit exceeded: {e}")
+            raise ClassificationError("Service is busy. Please try again in a moment.") from e
+        except APIConnectionError as e:
+            logger.error(f"Claude API connection error: {e}")
+            raise ClassificationError("Unable to connect to classification service.") from e
+        except APIError as e:
+            logger.error(f"Claude API error: {e}")
+            raise ClassificationError("Classification service error. Please try again.") from e
 
         # Check if Claude wants to use tools
         if response.stop_reason == "tool_use":

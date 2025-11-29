@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 from src.models.response import ClassificationRequest, ErrorResponse
-from src.agent.classifier import classify_product
+from src.agent.classifier import classify_product, ClassificationError
 
 
 def validate_classification_request(body: Dict[str, Any]) -> Tuple[Optional[ClassificationRequest], Optional[ErrorResponse]]:
@@ -95,8 +95,14 @@ def handle_classify(event: Dict[str, Any]) -> Dict[str, Any]:
     try:
         result = classify_product(request.description)
         return create_response(200, result.to_dict())
+    except ClassificationError as e:
+        # Handle known classification errors with specific messages
+        return create_response(500, ErrorResponse(
+            error="service_error",
+            message=str(e)
+        ).to_dict())
     except Exception as e:
-        # Handle classifier errors gracefully
+        # Handle unexpected errors gracefully
         return create_response(500, ErrorResponse(
             error="service_error",
             message="Service temporarily unavailable. Please try again."
