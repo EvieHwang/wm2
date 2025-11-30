@@ -54,8 +54,6 @@ The system learns from user feedback to improve classification accuracy over tim
 - **Few-shot learning**: Relevant feedback is injected into Claude's prompt as examples
 - **Two-tier retrieval**: Combines recent feedback + keyword-matched historical entries
 
-This implements the "Memory" component of the MIND framework for AI agent enhancement.
-
 ## Tech Stack
 
 - **Backend**: Python 3.12, AWS Lambda, API Gateway, SAM, DynamoDB
