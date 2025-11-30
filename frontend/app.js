@@ -22,6 +22,14 @@ const reasoningText = document.getElementById('reasoning-text');
 const toolsUsed = document.getElementById('tools-used');
 const errorText = document.getElementById('error-text');
 
+// Feedback elements
+const feedbackUpBtn = document.getElementById('feedback-up');
+const feedbackDownBtn = document.getElementById('feedback-down');
+const feedbackStatus = document.getElementById('feedback-status');
+
+// State for feedback submission
+let lastClassificationResult = null;
+
 /**
  * Update character count display
  */
@@ -109,9 +117,30 @@ function renderToolsUsed(tools) {
 }
 
 /**
+ * Reset feedback UI state
+ */
+function resetFeedbackUI() {
+    feedbackUpBtn.disabled = false;
+    feedbackDownBtn.disabled = false;
+    feedbackUpBtn.classList.remove('selected');
+    feedbackDownBtn.classList.remove('selected');
+    feedbackStatus.classList.add('hidden');
+    feedbackStatus.textContent = '';
+}
+
+/**
  * Display classification result
  */
 function displayResult(data) {
+    // Store result for feedback submission
+    lastClassificationResult = {
+        description: descriptionInput.value.trim(),
+        classification: data.classification,
+    };
+
+    // Reset feedback UI
+    resetFeedbackUI();
+
     // Update classification badge
     classificationBadge.textContent = getCategoryDisplayName(data.classification);
     classificationBadge.className = `category-badge ${getCategoryClass(data.classification)}`;
@@ -198,6 +227,71 @@ descriptionInput.addEventListener('keydown', (e) => {
         classifyProduct();
     }
 });
+
+/**
+ * Submit feedback to the API
+ */
+async function submitFeedback(isCorrect) {
+    if (!lastClassificationResult) {
+        return;
+    }
+
+    // Disable buttons while submitting
+    feedbackUpBtn.disabled = true;
+    feedbackDownBtn.disabled = true;
+
+    // Highlight selected button
+    if (isCorrect) {
+        feedbackUpBtn.classList.add('selected');
+    } else {
+        feedbackDownBtn.classList.add('selected');
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/v1/feedback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                description: lastClassificationResult.description,
+                classification: lastClassificationResult.classification,
+                is_correct: isCorrect,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            feedbackStatus.textContent = 'Thanks for your feedback!';
+            feedbackStatus.classList.remove('hidden', 'error');
+            feedbackStatus.classList.add('success');
+        } else {
+            feedbackStatus.textContent = data.message || 'Failed to submit feedback';
+            feedbackStatus.classList.remove('hidden', 'success');
+            feedbackStatus.classList.add('error');
+            // Re-enable buttons on error
+            feedbackUpBtn.disabled = false;
+            feedbackDownBtn.disabled = false;
+            feedbackUpBtn.classList.remove('selected');
+            feedbackDownBtn.classList.remove('selected');
+        }
+    } catch (error) {
+        console.error('Feedback error:', error);
+        feedbackStatus.textContent = 'Failed to submit feedback. Please try again.';
+        feedbackStatus.classList.remove('hidden', 'success');
+        feedbackStatus.classList.add('error');
+        // Re-enable buttons on error
+        feedbackUpBtn.disabled = false;
+        feedbackDownBtn.disabled = false;
+        feedbackUpBtn.classList.remove('selected');
+        feedbackDownBtn.classList.remove('selected');
+    }
+}
+
+// Feedback button event listeners
+feedbackUpBtn.addEventListener('click', () => submitFeedback(true));
+feedbackDownBtn.addEventListener('click', () => submitFeedback(false));
 
 // Initialize
 updateCharCount();

@@ -11,7 +11,8 @@ from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError, A
 # Configure logging
 logger = logging.getLogger(__name__)
 
-from src.agent.prompts import TOOLS, SYSTEM_PROMPT, get_classification_prompt
+from src.agent.prompts import TOOLS, SYSTEM_PROMPT, get_classification_prompt, get_feedback_context
+from src.feedback.retrieval import get_relevant_feedback
 from src.agent.tools.lookup_product import lookup_known_product
 from src.agent.tools.extract_dimensions import extract_explicit_dimensions, parse_reference_dimensions, parse_reference_weight
 from src.models.categories import CategoryEnum, classify_by_dimensions
@@ -114,6 +115,15 @@ def classify_product(description: str) -> ClassificationResult:
 
     tools_used = ToolUsageRecord()
 
+    # Retrieve relevant feedback for few-shot context
+    feedback_items = get_relevant_feedback(description)
+    feedback_context = get_feedback_context(feedback_items)
+
+    # Build system prompt with feedback context
+    system_prompt = SYSTEM_PROMPT
+    if feedback_context:
+        system_prompt = SYSTEM_PROMPT + "\n" + feedback_context
+
     # Initial message to Claude
     messages = [
         {"role": "user", "content": get_classification_prompt(description)}
@@ -131,7 +141,7 @@ def classify_product(description: str) -> ClassificationResult:
             response = client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=1024,
-                system=SYSTEM_PROMPT,
+                system=system_prompt,
                 tools=TOOLS,
                 tool_choice={"type": "auto"},
                 messages=messages,

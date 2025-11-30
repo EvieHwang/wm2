@@ -15,6 +15,28 @@ Parameters:
     NoEcho: true
 
 Resources:
+  # DynamoDB table for feedback storage
+  FeedbackTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-feedback"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: timestamp-index
+          KeySchema:
+            - AttributeName: timestamp
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
   ClassifierFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -24,6 +46,10 @@ Resources:
       Environment:
         Variables:
           ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+          FEEDBACK_TABLE_NAME: !Ref FeedbackTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FeedbackTable
       Events:
         ClassifyPost:
           Type: Api
@@ -36,6 +62,12 @@ Resources:
           Properties:
             Path: /health
             Method: get
+            RestApiId: !Ref ClassifierApi
+        FeedbackPost:
+          Type: Api
+          Properties:
+            Path: /v1/feedback
+            Method: post
             RestApiId: !Ref ClassifierApi
 
   ClassifierApi:
@@ -53,6 +85,37 @@ Resources:
           title: "ASRS Storage Classifier API"
           version: "1.0.0"
         paths:
+          /v1/feedback:
+            post:
+              x-amazon-apigateway-integration:
+                type: aws_proxy
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ClassifierFunction.Arn}/invocations"
+            options:
+              responses:
+                "200":
+                  description: "CORS preflight response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
           /classify:
             post:
               x-amazon-apigateway-integration:
@@ -98,3 +161,6 @@ Outputs:
   ClassifierFunctionArn:
     Description: Classifier Lambda Function ARN
     Value: !GetAtt ClassifierFunction.Arn
+  FeedbackTableName:
+    Description: DynamoDB feedback table name
+    Value: !Ref FeedbackTable

@@ -45,9 +45,20 @@ Enter a product description, and the classifier determines the optimal ASRS (Aut
 
 The agent uses Claude's native tool_choice="auto" to decide whether to call tools based on the input. For recognized products (e.g., "iPhone 14"), it looks up known dimensions. For descriptions with explicit measurements, it extracts them via regex. The final classification applies dimension/weight constraints.
 
+## Feedback Memory
+
+The system learns from user feedback to improve classification accuracy over time:
+
+- **Thumbs up/down**: Users can mark classifications as correct or incorrect
+- **Stored in DynamoDB**: Feedback persists globally across all users
+- **Few-shot learning**: Relevant feedback is injected into Claude's prompt as examples
+- **Two-tier retrieval**: Combines recent feedback + keyword-matched historical entries
+
+This implements the "Memory" component of the MIND framework for AI agent enhancement.
+
 ## Tech Stack
 
-- **Backend**: Python 3.12, AWS Lambda, API Gateway, SAM
+- **Backend**: Python 3.12, AWS Lambda, API Gateway, SAM, DynamoDB
 - **Frontend**: Vanilla HTML/CSS/JavaScript, S3 static hosting
 - **AI**: Claude API (Anthropic) with native tool use
 - **Data**: CSV reference database with 479 known products

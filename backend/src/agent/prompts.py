@@ -1,6 +1,6 @@
 """Tool definitions and system prompts for the classification agent."""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 # Tool definitions for Claude API
@@ -115,3 +115,46 @@ def get_classification_prompt(description: str) -> str:
 Product description: {description}
 
 Use the available tools if helpful, then provide your classification as JSON."""
+
+
+def get_feedback_context(feedback_items: List[Dict[str, Any]]) -> str:
+    """Format feedback items as few-shot context for the system prompt.
+
+    Args:
+        feedback_items: List of feedback items from retrieval.
+
+    Returns:
+        Formatted string for system prompt injection, or empty string if no items.
+    """
+    if not feedback_items:
+        return ""
+
+    examples = []
+    for item in feedback_items:
+        desc = item.get("description", "")
+        classification = item.get("classification", "")
+        is_correct = item.get("is_correct", False)
+
+        # Truncate long descriptions
+        if len(desc) > 100:
+            desc = desc[:97] + "..."
+
+        if is_correct:
+            # Positive example - this classification was correct
+            examples.append(
+                f'- "{desc}" -> {classification} (confirmed correct by user)'
+            )
+        else:
+            # Negative example - this classification was wrong
+            examples.append(
+                f'- "{desc}" -> {classification} (user indicated this was INCORRECT - consider alternatives)'
+            )
+
+    header = """
+## User Feedback History
+
+The following are examples from previous classifications with user feedback.
+Use these to improve your accuracy - especially avoid repeating mistakes marked as incorrect:
+
+"""
+    return header + "\n".join(examples)

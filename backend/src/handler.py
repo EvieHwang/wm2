@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from src.models.response import ClassificationRequest, ErrorResponse
 from src.agent.classifier import classify_product, ClassificationError
+from src.feedback.storage import store_feedback
 
 
 def validate_classification_request(body: Dict[str, Any]) -> Tuple[Optional[ClassificationRequest], Optional[ErrorResponse]]:
@@ -75,6 +76,93 @@ def handle_health(event: Dict[str, Any]) -> Dict[str, Any]:
     })
 
 
+def validate_feedback_request(body: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[ErrorResponse]]:
+    """Validate feedback request body.
+
+    Args:
+        body: Parsed JSON request body.
+
+    Returns:
+        Tuple of (validated_data, error). One will always be None.
+    """
+    # Check required fields
+    required_fields = ["description", "classification", "is_correct"]
+    for field in required_fields:
+        if field not in body:
+            return None, ErrorResponse(
+                error="validation_error",
+                message=f"Missing required field: {field}"
+            )
+
+    description = body.get("description", "")
+    classification = body.get("classification", "")
+    is_correct = body.get("is_correct")
+
+    # Validate description
+    if not description or not str(description).strip():
+        return None, ErrorResponse(
+            error="validation_error",
+            message="Description cannot be empty"
+        )
+
+    # Validate classification
+    valid_classifications = ["POUCH", "SMALL_BIN", "TOTE", "CARTON", "OVERSIZED"]
+    if classification not in valid_classifications:
+        return None, ErrorResponse(
+            error="validation_error",
+            message=f"Invalid classification. Must be one of: {', '.join(valid_classifications)}"
+        )
+
+    # Validate is_correct is boolean
+    if not isinstance(is_correct, bool):
+        return None, ErrorResponse(
+            error="validation_error",
+            message="is_correct must be a boolean"
+        )
+
+    return {
+        "description": str(description).strip(),
+        "classification": classification,
+        "is_correct": is_correct,
+    }, None
+
+
+def handle_feedback(event: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle POST /v1/feedback endpoint."""
+    # Parse request body
+    try:
+        body = json.loads(event.get("body", "{}"))
+    except json.JSONDecodeError:
+        return create_response(400, ErrorResponse(
+            error="validation_error",
+            message="Invalid JSON in request body"
+        ).to_dict())
+
+    # Validate request
+    validated, error = validate_feedback_request(body)
+    if error:
+        return create_response(400, error.to_dict())
+
+    # Store feedback
+    result = store_feedback(
+        description=validated["description"],
+        classification=validated["classification"],
+        is_correct=validated["is_correct"],
+    )
+
+    if result is None:
+        return create_response(500, ErrorResponse(
+            error="service_error",
+            message="Failed to store feedback"
+        ).to_dict())
+
+    return create_response(200, {
+        "success": True,
+        "id": result.get("id"),
+        "message": "Feedback recorded successfully"
+    })
+
+
 def handle_classify(event: Dict[str, Any]) -> Dict[str, Any]:
     """Handle POST /classify endpoint."""
     # Parse request body
@@ -122,6 +210,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return handle_health(event)
     elif path == "/classify" and http_method == "POST":
         return handle_classify(event)
+    elif path == "/v1/feedback" and http_method == "POST":
+        return handle_feedback(event)
     elif http_method == "OPTIONS":
         # CORS preflight
         return create_response(200, {})
