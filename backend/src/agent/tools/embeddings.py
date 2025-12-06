@@ -1,5 +1,15 @@
 """Embedding utilities for semantic search."""
 
+import os
+
+# Set HuggingFace cache for Lambda compatibility (must be before imports)
+# The model is pre-downloaded during Docker build to /var/task/models
+if "AWS_LAMBDA_FUNCTION_NAME" in os.environ:
+    # Model is embedded in container at /var/task/models (set in Dockerfile)
+    os.environ.setdefault("HF_HOME", "/var/task/models")
+    os.environ.setdefault("TRANSFORMERS_CACHE", "/var/task/models")
+    os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", "/var/task/models")
+
 from sentence_transformers import SentenceTransformer
 
 
