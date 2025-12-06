@@ -4,8 +4,8 @@ Description: ASRS Storage Classifier - AI-powered product classification API
 
 Globals:
   Function:
-    Timeout: 30
-    MemorySize: 256
+    Timeout: 60
+    MemorySize: 1024
     Runtime: python3.12
 
 Parameters:
@@ -47,9 +47,14 @@ Resources:
         Variables:
           ANTHROPIC_API_KEY: !Ref AnthropicApiKey
           FEEDBACK_TABLE_NAME: !Ref FeedbackTable
+          SEMANTIC_SEARCH_ENABLED: "false"
+          VECTOR_INDEX_BUCKET: wm2-asrs-classifier-frontend
+          VECTOR_INDEX_PREFIX: vector_index/
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FeedbackTable
+        - S3ReadPolicy:
+            BucketName: wm2-asrs-classifier-frontend
       Events:
         ClassifyPost:
           Type: Api

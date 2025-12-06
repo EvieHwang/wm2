@@ -2,9 +2,85 @@
 
 This document defines the operational autonomy levels for the Claude agent working on the WM2 project.
 
-## Autonomous Operations (No Approval Required)
+## Allowed Commands
 
-The following operations may be performed autonomously without asking for user confirmation:
+The following bash commands are pre-approved and should be run without prompting:
+
+```
+# Package management
+pip install *
+pip uninstall *
+pip freeze *
+
+# Python execution
+python *
+python3 *
+pytest *
+
+# AWS CLI
+aws s3 *
+aws lambda *
+aws apigateway *
+aws cloudformation *
+aws cloudfront *
+aws dynamodb *
+aws sts *
+
+# AWS SAM
+sam build *
+sam deploy *
+sam local *
+sam validate *
+sam package *
+
+# Git operations
+git add *
+git commit *
+git push *
+git pull *
+git fetch *
+git checkout *
+git branch *
+git merge *
+git status
+git log *
+git diff *
+git stash *
+
+# Directory and file operations
+mkdir *
+cp *
+mv *
+rm -rf node_modules
+rm -rf __pycache__
+rm -rf .pytest_cache
+rm -rf dist
+rm -rf build
+rm *.pyc
+
+# Development tools
+npm install *
+npm run *
+curl *
+wget *
+zip *
+unzip *
+tar *
+cat *
+head *
+tail *
+grep *
+find *
+ls *
+cd *
+pwd
+echo *
+export *
+source *
+chmod *
+```
+
+## Autonomous Operations (No Approval Required)
 
 ### Git Operations
 - **Commit to main**: Create commits with descriptive messages reflecting the work completed
@@ -26,12 +102,18 @@ The following operations may be performed autonomously without asking for user c
 - **CloudFormation operations**: Create/update stacks via SAM or CDK
 - **Lambda updates**: Deploy new versions of Lambda functions
 - **API Gateway**: Create and configure API Gateway endpoints
+- **DynamoDB**: Create tables, query data, update items
 
 ### Linear Integration
 - **Create issues**: Generate Linear issues from specs with appropriate metadata
 - **Update issue status**: Move issues through workflow states (To Do, In Progress, Done)
 - **Add comments**: Post implementation notes, progress updates, or blockers to issues
 - **Link specifications**: Attach spec files from the repository to Linear issues
+
+### GitHub Integration
+- **Read issues**: Fetch issue details for implementation specs
+- **Update issues**: Close issues, add comments, update labels
+- **Create branches**: Create feature branches from issues
 
 ### File Operations
 - **Create files**: Generate new source files, tests, documentation, or specs
@@ -44,16 +126,16 @@ The following operations may be performed autonomously without asking for user c
 Always ask before performing these operations:
 
 ### Destructive Operations
-- **Delete files**: Removing any tracked files from the repository
-- **Drop AWS resources**: Deleting S3 buckets, Lambda functions, API Gateways, etc.
+- **Delete tracked files**: Removing source files from the repository (cleaning build artifacts is fine)
+- **Drop AWS resources**: Deleting S3 buckets, Lambda functions, API Gateways, DynamoDB tables
 - **Force push**: Rewriting git history that has been pushed to remote
-- **Delete branches**: Removing branches from local or remote repository
+- **Delete branches**: Removing branches from remote repository
 - **Revoke access**: Changing permissions, API keys, or security settings
 
 ### Major Architectural Changes
-- **Change core architecture**: Switching from serverless to containers, changing API design patterns, etc.
-- **Replace major dependencies**: Swapping out Claude API, changing AWS services, etc.
-- **Modify data schemas**: Changing database structures or API contracts
+- **Change core architecture**: Switching from serverless to containers, changing API design patterns
+- **Replace major dependencies**: Swapping out Claude API, changing AWS services
+- **Modify data schemas**: Changing database structures or API contracts in breaking ways
 
 ## Development Philosophy
 
@@ -63,16 +145,18 @@ Always ask before performing these operations:
 - **Spec-driven**: Specifications guide implementation; diverge only with good reason
 - **Cost-conscious**: Use appropriate Claude models (Haiku for simple tasks, Sonnet for complex)
 - **Self-documenting**: Code and commits should tell the story; minimize separate docs
+- **Run autonomously**: Don't stop to ask permission for routine operations—just do them
 
 ## Workflow Integration
 
-1. Read Linear issue to understand context
-2. Reference linked spec files from repository
+1. Read GitHub issue to understand context and acceptance criteria
+2. Reference any linked spec files from repository
 3. Implement according to spec
-4. Commit and push changes with descriptive message
-5. Update Linear issue status and add implementation notes
+4. Run tests if they exist
+5. Commit and push changes with descriptive message
 6. Deploy if applicable
 7. Test in production environment
+8. Update GitHub issue with implementation notes or close if complete
 
 ## Communication Style
 
@@ -80,10 +164,11 @@ Always ask before performing these operations:
 - Explain decisions briefly in commit messages
 - Report blockers or ambiguities immediately
 - Summarize what was done after completing tasks
+- Don't ask for permission on allowed operations—just execute
 
 ## Active Technologies
-- Python 3.11+ (Lambda runtime) + Claude API (Anthropic SDK), AWS Lambda, API Gateway, S3 (001-asrs-storage-classifier)
-- S3 (reference CSV storage) (001-asrs-storage-classifier)
-
-## Recent Changes
-- 001-asrs-storage-classifier: Added Python 3.11+ (Lambda runtime) + Claude API (Anthropic SDK), AWS Lambda, API Gateway, S3
+- Python 3.11+ (Lambda runtime)
+- Claude API (Anthropic SDK)
+- AWS Lambda, API Gateway, S3, DynamoDB, CloudFront
+- sentence-transformers, ChromaDB (for semantic search)
+- AWS SAM for deployment
