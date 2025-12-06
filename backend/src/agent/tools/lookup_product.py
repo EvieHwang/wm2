@@ -11,6 +11,10 @@ from src.data.reference_loader import get_reference_data
 # Flag to enable/disable semantic search (disabled in Lambda until container deployed)
 SEMANTIC_SEARCH_ENABLED = os.environ.get("SEMANTIC_SEARCH_ENABLED", "true").lower() == "true"
 
+# Logger for this module
+import logging
+logger = logging.getLogger(__name__)
+
 
 class KeywordSearcher:
     """Keyword-based search fallback for Lambda deployment."""
@@ -209,3 +213,24 @@ def lookup_known_product(query: str) -> Dict[str, Any]:
         "best_match": best_match,
         "message": f"Found {len(matches)} product(s) matching '{query}' ({search_method} search)"
     }
+
+
+def _warm_up_semantic_search():
+    """Pre-initialize semantic search during Lambda init to reduce cold start latency."""
+    if not SEMANTIC_SEARCH_ENABLED:
+        return
+
+    try:
+        logger.info("Pre-warming semantic search...")
+        searcher = SemanticSearcher.get_instance()
+        # Run a dummy query to fully initialize the embedding model
+        searcher.search("test product", max_results=1)
+        logger.info("Semantic search warmed up successfully")
+    except Exception as e:
+        logger.warning(f"Failed to pre-warm semantic search: {e}")
+
+
+# Pre-initialize semantic search during module load (Lambda init phase)
+# This runs when the container starts, before any requests
+if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    _warm_up_semantic_search()

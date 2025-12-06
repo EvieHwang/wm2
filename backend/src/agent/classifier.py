@@ -69,19 +69,28 @@ def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
     """
     # Try to find JSON block in the text
     json_patterns = [
+        r'<result>\s*(.*?)\s*</result>',  # XML-style result tags
         r'```json\s*(.*?)\s*```',  # Markdown code block
         r'```\s*(.*?)\s*```',       # Generic code block
-        r'\{[^{}]*"classification"[^{}]*\}',  # Direct JSON with classification
     ]
 
     for pattern in json_patterns:
         match = re.search(pattern, text, re.DOTALL)
         if match:
             try:
-                json_str = match.group(1) if '```' in pattern else match.group(0)
+                json_str = match.group(1)
                 return json.loads(json_str)
             except json.JSONDecodeError:
                 continue
+
+    # Try to find a JSON object with classification key anywhere in text
+    json_obj_pattern = r'\{[^{}]*"classification"[^{}]*\}'
+    match = re.search(json_obj_pattern, text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
 
     # Try parsing the entire text as JSON
     try:
