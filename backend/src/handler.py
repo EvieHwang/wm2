@@ -189,7 +189,7 @@ def handle_classify(event: Dict[str, Any]) -> Dict[str, Any]:
             error="service_error",
             message=str(e)
         ).to_dict())
-    except Exception as e:
+    except Exception:
         # Handle unexpected errors gracefully
         return create_response(500, ErrorResponse(
             error="service_error",

@@ -86,7 +86,7 @@ def get_vector_index_path() -> str:
             return str(LOCAL_INDEX_PATH)
 
         # Download from S3
-        print(f"Downloading vector index from S3...")
+        print("Downloading vector index from S3...")
         if download_from_s3(VECTOR_INDEX_BUCKET, VECTOR_INDEX_PREFIX, LOCAL_INDEX_PATH):
             return str(LOCAL_INDEX_PATH)
         else:
@@ -103,5 +103,5 @@ def get_vector_index_path() -> str:
             return str(DEFAULT_DEV_PATH)
 
         raise FileNotFoundError(
-            f"Vector index not found. Run 'python scripts/generate_embeddings.py' first."
+            "Vector index not found. Run 'python scripts/generate_embeddings.py' first."
         )

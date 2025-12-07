@@ -16,7 +16,7 @@ STOPWORDS: Set[str] = {
     "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very",
     "just", "also", "now", "here", "there", "then", "once", "any", "if",
     "product", "item", "box", "package", "description", "approximately",
-    "approx", "about", "around", "roughly", "exactly", "please", "thanks",
+    "approx", "around", "roughly", "exactly", "please", "thanks",
 }
 
 # Minimum keyword length

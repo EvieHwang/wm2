@@ -95,7 +95,7 @@ def load_reference_data(force_reload: bool = False) -> pd.DataFrame:
     except Exception as e:
         raise FileNotFoundError(
             f"Reference data not found locally or in S3: {e}"
-        )
+        ) from e
 
 
 def get_reference_data() -> pd.DataFrame:
