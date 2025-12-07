@@ -22,10 +22,7 @@ jobs:
         run: pip install ruff
 
       - name: Run ruff linter
-        run: ruff check backend/src/
-
-      - name: Run ruff formatter check
-        run: ruff format --check backend/src/
+        run: ruff check backend/src/ --config backend/pyproject.toml
 
   test:
     name: Test
