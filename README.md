@@ -27,26 +27,52 @@ Enter a product description, and the classifier determines the optimal ASRS (Aut
 
 ## Architecture
 
-```
-┌─────────────┐     ┌─────────────┐     ┌──────────────────┐
-│   Frontend  │────▶│ API Gateway │────▶│  Lambda Function │
-│    (S3)     │     │   (CORS)    │     │   (Python 3.12)  │
-└─────────────┘     └─────────────┘     └────────┬─────────┘
-                                                 │
-                                        ┌────────▼─────────┐
-                                        │   Claude API     │
-                                        │ (Agentic w/Tools)│
-                                        └────────┬─────────┘
-                                                 │
-                              ┌──────────────────┼──────────────────┐
-                              ▼                  ▼                  ▼
-                    ┌─────────────────┐ ┌───────────────┐ ┌─────────────┐
-                    │ lookup_product  │ │ extract_dims  │ │  Classify   │
-                    │   (optional)    │ │  (optional)   │ │  (always)   │
-                    └─────────────────┘ └───────────────┘ └─────────────┘
+```mermaid
+flowchart LR
+    subgraph Client
+        FE[Frontend<br/>S3 Static Site]
+    end
+
+    subgraph AWS["AWS Cloud"]
+        API[API Gateway<br/>REST + CORS]
+
+        subgraph Lambda["Lambda Container"]
+            H[Handler]
+            CL[Claude Agent<br/>Haiku]
+            T1[lookup_product]
+            T2[extract_dimensions]
+        end
+
+        subgraph Storage
+            DDB[(DynamoDB<br/>Feedback)]
+            S3D[(S3<br/>Data)]
+            CHR[(ChromaDB<br/>Vectors)]
+        end
+    end
+
+    subgraph External
+        ANTH[Anthropic API]
+    end
+
+    FE --> API
+    API --> H
+    H --> DDB
+    H --> CL
+    CL <--> ANTH
+    CL --> T1
+    CL --> T2
+    T1 --> CHR
+    T1 --> S3D
+    CHR -.-> S3D
 ```
 
-The agent uses Claude's native tool_choice="auto" to decide whether to call tools based on the input. For recognized products (e.g., "iPhone 14"), it looks up known dimensions. For descriptions with explicit measurements, it extracts them via regex. The final classification applies dimension/weight constraints.
+**How it works:**
+1. User submits a product description via the frontend
+2. Lambda retrieves relevant feedback from DynamoDB for few-shot context
+3. Claude Agent decides which tools to call (if any) based on the input
+4. `lookup_product` uses semantic search (ChromaDB) to find similar products
+5. `extract_dimensions` parses explicit measurements from text
+6. Claude synthesizes results and returns a classification
 
 ## RAG Semantic Search Architecture
 
