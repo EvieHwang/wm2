@@ -1,5 +1,8 @@
 # ASRS Storage Classifier
 
+[![CI](https://github.com/EvieHwang/wm2/actions/workflows/ci.yml/badge.svg)](https://github.com/EvieHwang/wm2/actions/workflows/ci.yml)
+[![Deploy](https://github.com/EvieHwang/wm2/actions/workflows/deploy.yml/badge.svg)](https://github.com/EvieHwang/wm2/actions/workflows/deploy.yml)
+
 An AI-powered product classification system that automatically assigns warehouse storage categories based on text descriptions. Built with Claude API and deployed on AWS serverless infrastructure.
 
 **[Live Demo](http://wm2-asrs-classifier-frontend.s3-website-us-west-2.amazonaws.com/)**
@@ -61,7 +64,24 @@ The system learns from user feedback to improve classification accuracy over tim
 - **AI**: Claude API (Anthropic) with native tool use
 - **Data**: CSV reference database with 479 known products
 
-## Deployment
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI**: Runs on all PRs and pushes to main (lint, test, security scan, dependency audit)
+- **Deploy**: Automatically deploys to AWS on merge to main
+
+### Required GitHub Secrets
+
+To enable automated deployment, configure these secrets in your GitHub repository:
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key with Lambda, ECR, S3, CodeBuild permissions |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+| `ANTHROPIC_API_KEY` | Anthropic API key for running tests |
+
+### Manual Deployment
 
 Prerequisites: AWS CLI configured, SAM CLI installed, Anthropic API key
 
