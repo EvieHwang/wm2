@@ -48,6 +48,94 @@ Enter a product description, and the classifier determines the optimal ASRS (Aut
 
 The agent uses Claude's native tool_choice="auto" to decide whether to call tools based on the input. For recognized products (e.g., "iPhone 14"), it looks up known dimensions. For descriptions with explicit measurements, it extracts them via regex. The final classification applies dimension/weight constraints.
 
+## RAG Semantic Search Architecture
+
+The product lookup tool uses Retrieval-Augmented Generation (RAG) with semantic search to find relevant products:
+
+```mermaid
+flowchart TB
+    subgraph User["🧑 User"]
+        Q[Product Query]
+    end
+
+    subgraph Lambda["⚡ AWS Lambda"]
+        H[Handler]
+
+        subgraph RAG["RAG Pipeline"]
+            FB[Feedback Retrieval]
+            CL[Claude Agent]
+        end
+
+        subgraph Tools["Tool Execution"]
+            LP[lookup_product]
+            ED[extract_dimensions]
+        end
+    end
+
+    subgraph SemanticSearch["🔍 Semantic Search"]
+        EMB[Embedding Service<br/>all-MiniLM-L6-v2]
+        VDB[(ChromaDB<br/>Vector Store)]
+        HR[Hybrid Re-ranking]
+    end
+
+    subgraph Storage["💾 Storage"]
+        S3[(S3<br/>Vector Index)]
+        DDB[(DynamoDB<br/>Feedback)]
+        CSV[(S3<br/>Product CSV)]
+    end
+
+    Q --> H
+    H --> FB
+    FB --> DDB
+    FB --> CL
+
+    CL -->|tool_use| LP
+    CL -->|tool_use| ED
+
+    LP --> EMB
+    EMB -->|Query Vector| VDB
+    VDB -->|Top-K Results| HR
+    HR -->|Ranked Products| LP
+    LP --> CL
+
+    S3 -.->|Load at Init| VDB
+    CSV -.->|Product Metadata| VDB
+
+    CL -->|Classification| H
+```
+
+### Semantic Search Flow
+
+1. **Query Embedding**: User query is converted to a 384-dimensional vector using `all-MiniLM-L6-v2`
+2. **Vector Search**: ChromaDB performs approximate nearest neighbor search against 479 product embeddings
+3. **Hybrid Re-ranking**: Results are boosted by keyword overlap for better precision
+4. **Context Injection**: Top matches are passed to Claude as tool results
+
+### Feedback Loop (Few-Shot Learning)
+
+```mermaid
+flowchart LR
+    subgraph Retrieval["Two-Tier Retrieval"]
+        R1[Recent Feedback<br/>Last 10 entries]
+        R2[Keyword Match<br/>Semantic relevance]
+    end
+
+    subgraph Context["Prompt Context"]
+        FS[Few-Shot Examples]
+    end
+
+    DDB[(DynamoDB)] --> R1
+    DDB --> R2
+    R1 --> FS
+    R2 --> FS
+    FS --> CL[Claude Agent]
+
+    CL -->|Classification| U[User]
+    U -->|👍/👎| DDB
+```
+
+Feedback from users (thumbs up/down) is stored in DynamoDB and retrieved for future classifications, enabling the model to learn from corrections over time.
+
 ## Feedback Memory
 
 The system learns from user feedback to improve classification accuracy over time:
