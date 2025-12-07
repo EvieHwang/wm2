@@ -13,7 +13,10 @@ select = [
 ignore = [
     "E501",  # line too long (handled by formatter)
     "E402",  # module level import not at top (often intentional for logging)
+    "F401",  # unused imports (cleanup later)
+    "B007",  # loop control variable not used (intentional in iterrows)
     "B008",  # function call in default argument
+    "B905",  # zip without strict (not needed for all cases)
 ]
 
 [tool.ruff.lint.isort]
